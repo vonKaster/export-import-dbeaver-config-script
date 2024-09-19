@@ -29,12 +29,6 @@ Se ejecuta con `npm start` y se abre automáticamente un menú interactivo desde
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Por favor, abre un issue o un pull request para discutir cualquier cambio que desees realizar.
-### Exportación de Configuración
-![Exportar Configuración](./assets/export-config.png)
-
-### Importación de Configuración
-![Importar Configuración](./assets/import-config.png)
-
 ## Contacto
 
 Para cualquier consulta o soporte, puedes contactarme a través de:
