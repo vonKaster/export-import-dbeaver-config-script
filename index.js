@@ -53,6 +53,11 @@ const askExportPath = async () => {
 
 const exportConfig = async (configPath, exportPath) => {
   try {
+    if (!fs.existsSync(configPath) || fs.readdirSync(configPath).length === 0) {
+      console.error('No hay nada que exportar.');
+      return;
+    }
+
     if (!fs.existsSync(exportPath)) {
       fs.mkdirSync(exportPath, { recursive: true });
       console.log(`Directorio creado: ${exportPath}`);
@@ -63,7 +68,7 @@ const exportConfig = async (configPath, exportPath) => {
 
     fs.readdirSync(configPath).forEach(file => {
       const filePath = path.join(configPath, file);
-      zip.addLocalFile(filePath); // Añade cada archivo individualmente
+      zip.addLocalFile(filePath);
     });
 
     zip.writeZip(exportFile);
@@ -73,28 +78,96 @@ const exportConfig = async (configPath, exportPath) => {
   }
 };
 
+const importConfig = async (zipPath, configPath) => {
+  try {
+    if (!fs.existsSync(zipPath)) {
+      console.error('El archivo zip no existe.');
+      return;
+    }
+
+    const zip = new AdmZip(zipPath);
+    const zipEntries = zip.getEntries();
+
+    if (zipEntries.length === 0) {
+      console.error('El archivo zip está vacío o no contiene configuraciones válidas.');
+      return;
+    }
+
+    zip.extractAllTo(configPath, true);
+    console.log('Configuraciones importadas correctamente en:', configPath);
+  } catch (error) {
+    console.error(`Error al importar configuraciones: ${error.message}`);
+  }
+};
+
 const main = async () => {
+  console.log(`
+    ____  ____  _________ _    ____________ 
+   / __ \\/ __ )/ ____/   | |  / / ____/ __ \\
+  / / / / __  / __/ / /| | | / / __/ / /_/ /
+ / /_/ / /_/ / /___/ ___ | |/ / /___/ _, _/ 
+/_____/_____/_____/_/__|_|___/_____/_/ |_|  
+  / ____/ __ \\/ | / / ____/  _/ ____/       
+ / /   / / / /  |/ / /_   / // / __         
+/ /___/ /_/ / /|  / __/ _/ // /_/ /         
+\\____/\\____/_/_|_/_/__ /___/\\____/          
+ /_  __/ __ \\/ __ \\/ /                      
+  / / / / / / / / / /                       
+ / / / /_/ / /_/ / /___                     
+/_/  \\____/\\____/_____/
+𝙫𝟭.𝟬.𝟬
+
+𝙗𝙮 @𝙫𝙤𝙣𝙠𝙖𝙨𝙩𝙚𝙧
+`);
   const osChoice = await askOS();
   const action = await askAction();
   const configPath = dbeaverConfigPaths[osChoice];
 
-  if (!fs.existsSync(configPath)) {
-    console.error('La configuración de DBeaver no fue encontrada en la ruta esperada.');
-    process.exit(1);
-  }
-
-  if (action === 'Exportar configuraciones') {
-    const exportPath = await askExportPath();
-    exportConfig(configPath, exportPath);
-  } else if (action === 'Importar configuraciones') {
+  if (action === 'Importar configuraciones') {
     console.log('Iniciando aplicación Electron para importar configuraciones...');
-    const electronProcess = spawn('electron', ['.'], { stdio: 'inherit' });
 
-    electronProcess.on('close', (code) => {
+    let electronPath;
+    if (osChoice === 'windows') {
+      electronPath = path.join(__dirname, 'node_modules', '.bin', 'electron.cmd');
+    } else if (osChoice === 'linux') {
+      electronPath = path.join(__dirname, 'node_modules', '.bin', 'electron');
+    }
+
+    if (!fs.existsSync(electronPath)) {
+      console.error('No se encontró el ejecutable de Electron.');
+      process.exit(1);
+    }
+
+    if (!fs.existsSync(configPath)) {
+      fs.mkdirSync(configPath, { recursive: true });
+      console.log(`Directorio de configuración creado: ${configPath}`);
+    }
+
+    const electronProcess = spawn(electronPath, ['.'], { stdio: 'inherit', shell: true });
+
+    electronProcess.on('error', (err) => {
+      console.error(`Error al iniciar Electron: ${err.message}`);
+    });
+
+    electronProcess.on('close', async (code) => {
       if (code !== 0) {
         console.log(`Electron terminó con el código: ${code}`);
+      } else {
+        const importZipPath = path.join(projectExportPath, 'dbeaver-config-export.zip');
+        
+        await importConfig(importZipPath, configPath);
       }
     });
+  }
+
+  else if (action === 'Exportar configuraciones') {
+    if (!fs.existsSync(configPath)) {
+      console.error('La configuración de DBeaver no fue encontrada en la ruta esperada.');
+      process.exit(1);
+    }
+
+    const exportPath = await askExportPath();
+    exportConfig(configPath, exportPath);
   }
 };
 

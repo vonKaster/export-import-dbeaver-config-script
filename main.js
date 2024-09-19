@@ -2,22 +2,8 @@ const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 const AdmZip = require('adm-zip');
-
 app.disableHardwareAcceleration();
 
-let win;
-function createWindow() {
-  win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    }
-  });
-
-  win.loadURL('data:text/html, <h1>DBeaver Config Manager</h1>');
-}
 
 async function openFileDialog() {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -54,10 +40,14 @@ async function importConfig(configPath) {
 
     zip.extractAllTo(tempDir, true);
 
-    fs.copySync(tempDir, configPath, { overwrite: true });
-    console.log('Configuraciones importadas correctamente.');
+    fs.copySync(tempDir, configPath, { overwrite: true, dereference: true });
+    console.log('Archivos copiados a la carpeta de configuración de DBeaver.');
+
+    fs.chmodSync(configPath, '755');
+    console.log('Permisos actualizados en la carpeta de configuración de DBeaver.');
 
     fs.removeSync(tempDir);
+    console.log('Configuraciones importadas correctamente.');
 
     app.quit();
   } catch (error) {
@@ -66,8 +56,7 @@ async function importConfig(configPath) {
 }
 
 app.whenReady().then(() => {
-  createWindow();
-  const configPath = path.join(require('os').homedir(), '.local/share/DBeaverData/workspace6/General/.dbeaver'); // Cambia según el SO
+  const configPath = path.join(require('os').homedir(), 'AppData/Roaming/DBeaverData/workspace6/General/.dbeaver');
   importConfig(configPath);
 });
 
