@@ -1,0 +1,20 @@
+{
+  "name": "dbeaver-config-manager",
+  "version": "1.0.0",
+  "description": "Gestor para exportar e importar configuraciones de DBeaver.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node index.js",
+    "electron-start": "electron . --disable-gpu --disable-software-rasterizer"
+  },
+  "author": "vonKaster",
+  "license": "MIT",
+  "devDependencies": {
+    "adm-zip": "^0.5.16",
+    "electron": "^25.0.0"
+  },
+  "dependencies": {
+    "fs-extra": "^10.0.0",
+    "inquirer": "^8.0.0"
+  }
+}
